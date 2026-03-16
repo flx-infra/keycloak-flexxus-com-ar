@@ -1,33 +1,66 @@
 version: '3.6'
 
-services: 
-  flexxuserpweb:
-    image: fabreguesm/orderweb:latest
-    ports: 
-      - "5001:80"
+services:
+  keycloak-db:
+    image: postgres:16
+    environment:
+      POSTGRES_DB: keycloak
+      POSTGRES_USER: keycloak
+      POSTGRES_PASSWORD: change_me
+    volumes:
+      - keycloak_db_data:/var/lib/postgresql/data
     networks:
       - traefik
-    deploy:      
+    deploy:
       placement:
-        constraints: ["${NODE}"]      
-      labels:
-        - "traefik.enable=true"
-        - "traefik.http.routers.${SERVICE_NAME}.entrypoints=web"
-        - "traefik.http.routers.${SERVICE_NAME}.rule=Host(`${DOMAIN_NAME}`)"
-        - "traefik.http.middlewares.${SERVICE_NAME}-http.redirectscheme.scheme=https"
-        - "traefik.http.routers.${SERVICE_NAME}-https.rule=Host(`${DOMAIN_NAME}`)"
-        - "traefik.http.routers.${SERVICE_NAME}-https.entrypoints=https"
-        - "traefik.http.routers.${SERVICE_NAME}-https.tls=true"
-        - "traefik.http.routers.${SERVICE_NAME}-https.tls.certresolver=myresolver"
-        - "traefik.http.services.${SERVICE_NAME}.loadbalancer.server.port=80"     
+        constraints: ["${NODE}"]  
+    logging:
+      driver: loki
+      options:
+        loki-url: ${LOKI_URL}        
+
+  keycloak:
+    image: quay.io/keycloak/keycloak:26.1.4
+    command:
+      - start
+      - --http-enabled=true
+      - --hostname=https://sso.midominio.com
+      - --proxy-headers=xforwarded
+      - --health-enabled=true
+      - --metrics-enabled=true
     environment:
-      - MAIL_TO_ERROR=errores.flexxus@gmail.com
-      - URL_MAP_SERVICE=http://10.150.4.12:15310
+      KC_BOOTSTRAP_ADMIN_USERNAME: admin
+      KC_BOOTSTRAP_ADMIN_PASSWORD: super_admin_password
+      KC_DB: postgres
+      KC_DB_URL_HOST: keycloak-db
+      KC_DB_URL_DATABASE: keycloak
+      KC_DB_USERNAME: keycloak
+      KC_DB_PASSWORD: change_me
+    networks:
+      - traefik
+    
+    deploy:
+      placement:
+        constraints: ["${NODE}"]  
+      restart_policy:
+        condition: on-failure
+      labels:
+        - traefik.enable=true
+        - traefik.docker.network=traefik-network
+        - traefik.http.routers.keycloak.rule=Host(`sso.midominio.com`)
+        - traefik.http.routers.keycloak.entrypoints=websecure
+        - traefik.http.routers.keycloak.tls=true
+        - traefik.http.services.keycloak.loadbalancer.server.port=8080  
     logging:
       driver: loki
       options:
         loki-url: ${LOKI_URL}  
+
+volumes:
+  keycloak_db_data:
+    name: "${SERVICE_NAME}_keycloak_db_data"
+
 networks:
   traefik:
-    external:
-      name: traefik-network
+    external: true
+    name: traefik-network
