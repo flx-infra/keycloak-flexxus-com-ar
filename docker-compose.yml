@@ -45,12 +45,15 @@ services:
       restart_policy:
         condition: on-failure
       labels:
-        - traefik.enable=true
-        - traefik.docker.network=traefik-network
-        - traefik.http.routers.keycloak.rule=Host(`sso.midominio.com`)
-        - traefik.http.routers.keycloak.entrypoints=websecure
-        - traefik.http.routers.keycloak.tls=true
-        - traefik.http.services.keycloak.loadbalancer.server.port=8080  
+        - "traefik.enable=true"
+        - "traefik.http.routers.${SERVICE_NAME}.entrypoints=web"
+        - "traefik.http.routers.${SERVICE_NAME}.rule=Host(`${DOMAIN_NAME}`)"
+        - "traefik.http.middlewares.${SERVICE_NAME}-http.redirectscheme.scheme=https"
+        - "traefik.http.routers.${SERVICE_NAME}-https.rule=Host(`${DOMAIN_NAME}`)"
+        - "traefik.http.routers.${SERVICE_NAME}-https.entrypoints=https"
+        - "traefik.http.routers.${SERVICE_NAME}-https.tls=true"
+        - "traefik.http.routers.${SERVICE_NAME}-https.tls.certresolver=myresolver"
+        - "traefik.http.services.${SERVICE_NAME}.loadbalancer.server.port=8080"             
     logging:
       driver: loki
       options:
