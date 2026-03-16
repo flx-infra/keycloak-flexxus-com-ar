@@ -10,7 +10,7 @@ services:
     volumes:
       - keycloak_db_data:/var/lib/postgresql/data
     ports:
-      - "5004:5432"     
+      - "2000:5432"     
     networks:
       - traefik
     deploy:
