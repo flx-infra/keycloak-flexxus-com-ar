@@ -9,6 +9,8 @@ services:
       POSTGRES_PASSWORD: change_me
     volumes:
       - keycloak_db_data:/var/lib/postgresql/data
+    ports:
+      - "5004:5432"     
     networks:
       - traefik
     deploy:
