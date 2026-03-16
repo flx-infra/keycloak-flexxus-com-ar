@@ -24,7 +24,7 @@ services:
     command:
       - start
       - --http-enabled=true
-      - --hostname=https://sso.midominio.com
+      - --hostname=https://auth0.flexxus.com.ar
       - --proxy-headers=xforwarded
       - --health-enabled=true
       - --metrics-enabled=true
